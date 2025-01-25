@@ -152,7 +152,7 @@ class BorgWarehouseClient:
         
         if self.repository['sshPublicKey'] != self.data['sshPublicKey']:
             changed = True
-        if int(self.repository['storageSize']) != int(self.data['size']):
+        if int(self.repository['storageSize']) != int(self.data['storageSize']):
             changed = True
         if int(self.repository['alert']) != int(self.data['alert']):
             changed = True
