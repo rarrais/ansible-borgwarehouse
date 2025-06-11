@@ -19,9 +19,9 @@ short_description: Module for managing repositories in BorgWarehouse.
 
 # If this is part of a collection, you need to use semantic versioning,
 # i.e. the version is of the form "2.5.0" and not "2.4".
-version_added: "1.0.2"
+version_added: "1.1.0"
 
-description: Module for managing repositories in BorgWarehouse.
+description: Module for managing repositories in BorgWarehouse using API v1.
 
 options:
     url:
@@ -29,15 +29,15 @@ options:
         required: true
         type: str
     api_token:
-        description: BorgBase API_TOKEN.
+        description: BorgWarehouse API_TOKEN.
         required: true
         type: str
     alias:
-        description: Repository name.
+        description: Repository alias (user-defined name).
         required: true
         type: str     
     ssh_public_key:
-        description: Repository SSH publick key.
+        description: Repository SSH public key.
         required: true
         type: str
     state:
@@ -57,7 +57,7 @@ options:
         type: int
         default: 172800
     comment:
-        description: Repository backup alert in seconds.
+        description: An optional comment for the repository.
         required: false
         type: str
         default: Managed by Ansible.
@@ -102,6 +102,7 @@ class BorgWarehouseClient:
     def __init__(self, url, api_token, alias, ssh_public_key, size, alert, comment):
         self.url = url
         self.alias = alias
+        self.repository_name = None
 
         self.headers = {
             'Authorization': str('Bearer ' + api_token),
@@ -124,12 +125,12 @@ class BorgWarehouseClient:
 
         if self.repository is not None:
             self.exists = True
-            self.id = self.repository['id']
+            self.repository_name = self.repository['repositoryName']
         else:
             self.exists = False
 
     def get_repository(self):
-        get_api_url = self.url + "/api/repo"
+        get_api_url = self.url + "/api/v1/repositories"
         r = self.session.get(get_api_url , headers=self.headers)
         
         repositories = json.loads(r.read())['repoList']
@@ -141,13 +142,13 @@ class BorgWarehouseClient:
         return None
 
     def add_repository(self):     
-        add_api_url = self.url + "/api/repo/add"
+        add_api_url = self.url + "/api/v1/repositories"
 
         self.session.post(add_api_url, data=json.dumps(self.data), headers=self.headers)
         return True
 
     def edit_repository(self):
-        edit_api_url = self.url + "/api/repo/id/" + str(self.id) + "/edit"
+        edit_api_url = self.url + "/api/v1/repositories/" + self.repository_name
         changed = False
         
         if self.repository['sshPublicKey'] != self.data['sshPublicKey']:
@@ -165,16 +166,15 @@ class BorgWarehouseClient:
         return changed
 
     def delete_repo(self):
-        delete_api_url = self.url + "/api/repo/id/" + str(self.id) + "/delete"
-        data = {'toDelete': True}
-
-        self.session.delete(delete_api_url, data=json.dumps(data), headers=self.headers)
+        delete_api_url = self.url + "/api/v1/repositories/" + self.repository_name
+        
+        self.session.delete(delete_api_url, headers=self.headers)
         return True
 
 def run_module():
     module_args = dict(
         url=dict(type='str', required=True),
-        api_token=dict(type='str', required=True),
+        api_token=dict(type='str', required=True, no_log=True),
         alias=dict(type='str', required=True),
         ssh_public_key=dict(type='str', required=True),
         state=dict(type='str', required=False, choices=['absent', 'present'], default='present'),
