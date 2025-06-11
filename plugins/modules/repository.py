@@ -19,7 +19,7 @@ short_description: Module for managing repositories in BorgWarehouse.
 
 # If this is part of a collection, you need to use semantic versioning,
 # i.e. the version is of the form "2.5.0" and not "2.4".
-version_added: "1.1.0"
+version_added: "2.0.0"
 
 description: Module for managing repositories in BorgWarehouse using API v1.
 
